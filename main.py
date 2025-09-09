@@ -10,7 +10,6 @@ def read_root():
     return response
 
 
-
 # from fastapi import FastAPI
 # import logging
 

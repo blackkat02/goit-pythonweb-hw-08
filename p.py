@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, EmailStr, HttpUrl
 
+
 class User(BaseModel):
     name: str
     email: EmailStr
@@ -9,7 +10,14 @@ class User(BaseModel):
     age: Optional[int] = Field(None, ge=13, le=90)
     friends: Optional[int] = 0
 
-user = User(name="John", email="john@example.com", website="https://john.com", age=25, friends=10)
+
+user = User(
+    name="John",
+    email="john@example.com",
+    website="https://john.com",
+    age=25,
+    friends=10,
+)
 print(user)
 # Output: User(name='John', email='john@example.com', website='<https://john.com>', age=25, friends=10)
 

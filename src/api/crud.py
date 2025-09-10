@@ -4,40 +4,40 @@ from typing import List
 
 from src.database.db import get_async_session
 from src.schemas.schemas import ContactBase, ContactCreate, Contact
-from src.repository import create_user, get_users, get_user_by_id, update_user, delete_user
+from src.repository import create_contact, get_contacts, get_user_by_id, update_user, delete_user
 
 # Створення роутера для користувачів.
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/contacts", tags=["contacts"])
 
 # 1. POST - Створення нового користувача (C - Create)
-@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-async def create_new_user(user_in: UserCreate, db: AsyncSession = Depends(get_async_session)):
+@router.post("/", response_model=Contact, status_code=status.HTTP_201_CREATED)
+async def create_new_contact(contact_in: ContactCreate, db: AsyncSession = Depends(get_async_session)):
     """
     Створює нового користувача.
     """
     # Виклик функції репозиторію для створення користувача в базі даних.
-    db_user = await create_user(db, user_in)
-    return db_user
+    db_contact = await create_contact(db, contact_in)
+    return db_contact
 
 # 2. GET - Отримання списку всіх користувачів (R - Read)
 @router.get("/", response_model=List[Contact])
-async def read_users(db: AsyncSession = Depends(get_async_session)):
+async def get_all_contacts(db: AsyncSession = Depends(get_async_session)):
     """
     Повертає список всіх користувачів.
     """
-    users = await get_users(db)
-    return users
+    contacts = await get_contacts(db)
+    return contacts
 
-# 3. GET - Отримання конкретного користувача за ID (R - Read)
-@router.get("/{user_id}", response_model=Contact)
-async def read_user(user_id: int, db: AsyncSession = Depends(get_async_session)):
+#3 get_user_by_id
+@router.get("/{contact_id}", response_model=Contact)
+async def read_contact(contact_id: int, db: AsyncSession = Depends(get_async_session)):
     """
-    Повертає одного користувача за його ID.
+    Повертає один контакт за його ID.
     """
-    db_user = await get_user_by_id(db, user_id)
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="Користувача не знайдено.")
-    return db_user
+    db_contact = await get_user_by_id.get_contact_by_id(db, contact_id)
+    if db_contact is None:
+        raise HTTPException(status_code=404, detail="Контакт не знайдено.")
+    return db_contact
 
 # 4. PUT - Оновлення даних користувача (U - Update)
 @router.put("/{user_id}", response_model=UserRead)

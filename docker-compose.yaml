@@ -26,7 +26,7 @@ services:
     volumes:
       - .:/app
     env_file:
-      - .env
+      - .env.docker
 
   migration:
     build: .
@@ -36,7 +36,6 @@ services:
       - postgres_db
     env_file:
       - .env.docker
-    command: ["alembic", "revision", "--autogenerate", "-m", "Initial migration"] # <--- Команда для міграції
 
   postgres_db:
     image: postgres:14-alpine
@@ -63,28 +62,4 @@ services:
 
 volumes:
   postgres_data:
-
-
-
-# services:
-#   app:
-#     build: .
-#     ports:
-#       - "8080:8080"
-#     depends_on:
-#       - postgres_db
-#     volumes:
-#       - .:/app
-#     env_file:
-#       - .env
-
-#   postgres_db:
-#     image: postgres:14-alpine
-#     restart: always
-#     environment:
-#       POSTGRES_USER: ${DB_USER}
-#       POSTGRES_PASSWORD: ${DB_PASS}
-#       POSTGRES_DB: ${DB_NAME}
-#     ports:
-#       - "5432:5432"
 

@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from src.database.db import get_async_session
-from src.schemas.schemas import ContactBase, ContactCreate, Contact
-from src.repository import create_contact, get_contacts, get_user_by_id, update_user, delete_user
+from src.schemas.schemas import ContactBase, ContactCreate, Contact, ContactUpdate
+from src.repository import create_contact, get_contacts, get_contact_by_id, update_contact, delete_contact
 
 # Створення роутера для користувачів.
 router = APIRouter(prefix="/contacts", tags=["contacts"])
@@ -34,29 +34,29 @@ async def read_contact(contact_id: int, db: AsyncSession = Depends(get_async_ses
     """
     Повертає один контакт за його ID.
     """
-    db_contact = await get_user_by_id.get_contact_by_id(db, contact_id)
+    db_contact = await get_contact_by_id.get_contact_by_id(db, contact_id)
     if db_contact is None:
         raise HTTPException(status_code=404, detail="Контакт не знайдено.")
     return db_contact
 
 # 4. PUT - Оновлення даних користувача (U - Update)
-@router.put("/{user_id}", response_model=UserRead)
-async def update_existing_user(user_id: int, user_update: UserCreate, db: AsyncSession = Depends(get_async_session)):
+@router.put("/{contact_id}", response_model=ContactUpdate)
+async def update_existing_user(contact_id: int, contact_update: ContactUpdate, db: AsyncSession = Depends(get_async_session)):
     """
     Оновлює дані існуючого користувача.
     """
-    updated_user = await update_user(db, user_id, user_update)
-    if updated_user is None:
+    updated_contact = await update_contact(db, contact_id, contact_update)
+    if updated_contact is None:
         raise HTTPException(status_code=404, detail="Користувача не знайдено.")
-    return updated_user
+    return updated_contact
 
 # 5. DELETE - Видалення користувача (D - Delete)
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_existing_user(user_id: int, db: AsyncSession = Depends(get_async_session)):
+@router.delete("/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_existing_contact(contact_id: int, db: AsyncSession = Depends(get_async_session)):
     """
     Видаляє користувача.
     """
-    deleted = await delete_user(db, user_id)
+    deleted = await delete_contact(db, contact_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Користувача не знайдено.")
     return {"message": "Користувача видалено."}

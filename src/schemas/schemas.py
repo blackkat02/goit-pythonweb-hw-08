@@ -1,5 +1,6 @@
 from datetime import date
 from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator
+from typing import Optional
 
 
 class ContactBase(BaseModel):
@@ -30,3 +31,12 @@ class ContactCreate(ContactBase):
 class Contact(ContactBase):
     contact_id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class ContactUpdate(BaseModel):
+    first_name: Optional[str] = Field(None, min_length=3, max_length=50)
+    last_name: Optional[str] = Field(None, min_length=3, max_length=50)
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = Field(None, pattern=r"^\+?\d{10,15}$")
+    birthday: Optional[date] = None
+    other_info: Optional[str] = None

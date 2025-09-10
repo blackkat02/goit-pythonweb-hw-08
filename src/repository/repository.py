@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.models import Contact
-from src.schemas.schemas import ContactBase, ContactCreate, Contact
-from typing import List
+from src.schemas.schemas import ContactBase, ContactCreate, Contact, ContactUpdate
+from typing import List, Optional
 from sqlalchemy import select
 
 
@@ -26,6 +26,7 @@ async def create_contact(db: AsyncSession, contact: ContactCreate) -> Contact:
     
     return db_contact
 
+
 async def get_contacts(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[Contact]:
     """
     Повертає список всіх контактів з бази даних.
@@ -43,6 +44,7 @@ async def get_contacts(db: AsyncSession, skip: int = 0, limit: int = 100) -> Lis
     contacts = result.scalars().all()
     return contacts
 
+
 async def get_contact_by_id(db: AsyncSession, contact_id: int) -> Contact | None:
     """
     Повертає один контакт за його ID.
@@ -56,3 +58,24 @@ async def get_contact_by_id(db: AsyncSession, contact_id: int) -> Contact | None
     """
     # Запит до бази даних для отримання контакту за ID.
     return await db.get(Contact, contact_id)
+
+
+async def update_contact(db: AsyncSession, contact_id: int, body: ContactUpdate) -> Optional[Contact]:
+    """
+    Оновлює існуючий контакт у базі даних.
+
+    Args:
+        db (AsyncSession): Сесія бази даних.
+        contact_id (int): ID контакту.
+        body (ContactUpdate): Схема Pydantic з даними для оновлення.
+
+    Returns:
+        Optional[Contact]: Оновлений об'єкт контакту або None, якщо його не знайдено.
+    """
+    contact = await db.get(Contact, contact_id)
+    if contact:
+        for field, value in body.model_dump(exclude_unset=True).items():
+            setattr(contact, field, value)
+        await db.commit()
+        await db.refresh(contact)
+    return contact

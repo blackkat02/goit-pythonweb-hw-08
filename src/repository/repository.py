@@ -79,3 +79,29 @@ async def update_contact(db: AsyncSession, contact_id: int, body: ContactUpdate)
         await db.commit()
         await db.refresh(contact)
     return contact
+
+
+async def delete_contact(db: AsyncSession, contact_id: int) -> Contact | None:
+    """
+    Видаляє контакт за його ID.
+
+    Args:
+        db (AsyncSession): Сесія бази даних.
+        contact_id (int): ID контакту.
+
+    Returns:
+        Contact | None: Видалений об'єкт контакту або None, якщо його не знайдено.
+    """
+    # result = await db.execute(select(Contact).where(Contact.id == contact_id))
+    # db_contact = result.scalars().first()
+    db_contact = await db.get(Contact, contact_id)
+
+    if db_contact:
+        await db.delete(db_contact)
+        await db.commit()
+        return db_contact 
+
+    return None
+
+    
+     

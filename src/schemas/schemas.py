@@ -29,7 +29,7 @@ class ContactCreate(ContactBase):
 # Схема для вихідних даних
 # Вона має id і model_config, бо вона відображає дані з бази даних.
 class Contact(ContactBase):
-    contact_id: int
+    id: int
     model_config = ConfigDict(from_attributes=True)
 
 

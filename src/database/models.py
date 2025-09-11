@@ -8,10 +8,10 @@ class Base(DeclarativeBase):
 
 
 class Contact(Base):
-    __tablename__ = "Contacts"
+    __tablename__ = "сontacts"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     first_name: Mapped[str] = mapped_column(String(50))
-    last_name: Mapped[str] = mapped_column(String(50))
+    last_name: Mapped[str] = mapped_column(String(50), index=True)
     email: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     phone_number: Mapped[str] = mapped_column(String(20), unique=True)
     birthday: Mapped[date] = mapped_column(DATE, nullable=False)

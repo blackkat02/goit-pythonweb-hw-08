@@ -1,47 +1,12 @@
+import uvicorn
 from fastapi import FastAPI
-import logging
+from src.api.router import router as api_router
 
 app = FastAPI()
 
+# Включаємо головний роутер з префіксом /api
+app.include_router(api_router, prefix="/api")
 
-@app.get("/")
-def read_root():
-    response = {"message": "Welcome to FastAPI"}
-    return response
-
-
-# from fastapi import FastAPI
-# import logging
-
-# from fastapi import FastAPI, Depends, HTTPException, status
-# from sqlalchemy import text
-# from sqlalchemy.orm import Session
-
-# from src.database.db import session_manager
-
-# app = FastAPI()
-
-
-# @app.get("/")
-# def read_root(db: Session = Depends(session_manager)):
-#     try:
-#         # Make request
-#         result = db.execute(text("SELECT 1")).fetchone()
-#         if result is None:
-#             raise HTTPException(
-#                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#                 detail="Database is not configured correctly",
-#             )
-#         return {"message": "Welcome to FastAPI!"}
-#     except Exception as e:
-#         print(e)
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail="Error connecting to the database",
-#         )
-
-
-# if __name__ == "__main__":
-#     import uvicorn
-
-#     uvicorn.run(app, host="127.0.0.1", port=8000)
+if __name__ == "__main__":
+    # uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

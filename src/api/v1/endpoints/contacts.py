@@ -9,7 +9,7 @@ router = APIRouter(prefix="/contacts", tags=["contacts"])
 
 
 # 1. POST - Створення нового контакту (C - Create)
-@router.post("/", response_model=Contact, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ContactCreate, status_code=status.HTTP_201_CREATED)
 async def create_new_contact(contact_in: ContactCreate, db: AsyncSession = Depends(get_async_session)):
     """
     Створює новий контакт.
@@ -46,7 +46,7 @@ async def read_contact(contact_id: int, db: AsyncSession = Depends(get_async_ses
     
 
 # 4. PUT - Оновлення даних контакту (U - Update)
-@router.put("/{contact_id}", response_model=Contact)
+@router.put("/{contact_id}", response_model=ContactUpdate)
 async def update_existing_contact(
     contact_id: int, 
     contact_update: ContactUpdate, 
@@ -72,3 +72,25 @@ async def delete_existing_contact(contact_id: int, db: AsyncSession = Depends(ge
         raise HTTPException(status_code=404, detail="Контакт не знайдено.")
     return None
 
+
+# 6. GET - Отримання одного контакту за first_name або  last_name або email (R - Read)
+# @router.get("/{{query: query}}", response_model=Contact)
+# async def read_contact_by_last_name(
+#     {query: None}: dict, 
+#     db: AsyncSession = Depends(get_async_session,),
+#     skip: int = Query(0, ge=0),
+#     limit: int = Query(100, ge=1, le=100)
+#     ):
+#     """
+#     Повертає один контакт за його first_name або  last_name або email.
+#     """
+#     # db_contact = await get_contact_by_id(db, last_name)
+#     # if db_contact is None:
+#     #     raise HTTPException(status_code=404, detail="Контакти не знайдено.")
+#     # return db_contact
+#     if not query in [first_name, last_name, email]:
+#         raise HTTPException(status_code=404, detail="Контакт не знайдено.")
+#         return None
+
+#     contacts = await get_contacts(db, skip=skip, limit=limit)
+#     return contacts

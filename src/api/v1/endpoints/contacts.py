@@ -4,6 +4,7 @@ from typing import List
 from src.database.db import get_async_session
 from src.schemas.schemas import ContactCreate, Contact, ContactUpdate
 from src.repository.repository import create_contact, get_contacts, get_contact_by_id, update_contact, delete_contact
+from src.repository.repository import search_contact_single, search_contact_multi
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 
@@ -74,23 +75,26 @@ async def delete_existing_contact(contact_id: int, db: AsyncSession = Depends(ge
 
 
 # 6. GET - Отримання одного контакту за first_name або  last_name або email (R - Read)
-# @router.get("/{{query: query}}", response_model=Contact)
-# async def read_contact_by_last_name(
-#     {query: None}: dict, 
-#     db: AsyncSession = Depends(get_async_session,),
-#     skip: int = Query(0, ge=0),
-#     limit: int = Query(100, ge=1, le=100)
-#     ):
-#     """
-#     Повертає один контакт за його first_name або  last_name або email.
-#     """
-#     # db_contact = await get_contact_by_id(db, last_name)
-#     # if db_contact is None:
-#     #     raise HTTPException(status_code=404, detail="Контакти не знайдено.")
-#     # return db_contact
-#     if not query in [first_name, last_name, email]:
-#         raise HTTPException(status_code=404, detail="Контакт не знайдено.")
-#         return None
+@router.post("/search", response_model=list[Contact])
+async def search_contacts(
+    query: dict,
+    db: AsyncSession = Depends(get_async_session)
+):
+    """
+    Універсальний пошук:
+    - якщо query має 1 ключ → пошук по одному параметру
+    - якщо кілька ключів → пошук по кількох параметрах
+    """
+    if not query:
+        raise HTTPException(status_code=400, detail="Не передано жодного параметра пошуку.")
 
-#     contacts = await get_contacts(db, skip=skip, limit=limit)
-#     return contacts
+    if len(query) == 1:
+        field, value = next(iter(query.items()))
+        contacts = await search_contact_single(db, field, value)
+    else:
+        contacts = await search_contact_multi(db, query)
+
+    if not contacts:
+        raise HTTPException(status_code=404, detail="Контакт(и) не знайдено.")
+
+    return contacts

@@ -105,17 +105,53 @@ async def delete_contact(db: AsyncSession, contact_id: int) -> Contact | None:
     return None
 
     
-async def get_contact_by_last_name(db: AsyncSession, contact_id: int) -> Contact | None:
+# async def get_contact_by_last_name(db: AsyncSession, contact_id: int) -> Contact | None:
+#     """
+#     Повертає один контакт за його ID.
+
+#     Args:
+#         db (AsyncSession): Сесія бази даних.
+#         contact_id (int): ID контакту.
+
+#     Returns:
+#         Contact | None: Об'єкт контакту або None, якщо його не знайдено.
+#     """
+#     # Запит до бази даних для отримання контакту за ID.
+#     return await db.get(ContactsModel, contact_id)
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy import or_, and_
+from src.models import Contact
+
+
+async def search_contact_single(db: AsyncSession, field: str, value: str) -> list[ContactsModel]:
     """
-    Повертає один контакт за його ID.
-
-    Args:
-        db (AsyncSession): Сесія бази даних.
-        contact_id (int): ID контакту.
-
-    Returns:
-        Contact | None: Об'єкт контакту або None, якщо його не знайдено.
+    Пошук по одному параметру (динамічно).
     """
-    # Запит до бази даних для отримання контакту за ID.
-    return await db.get(ContactsModel, contact_id)
+    model_field = getattr(ContactsModel, field, None)
+    if model_field is None:
+        return []
 
+    stmt = select(ContactsModel).filter(model_field.ilike(f"%{value}%"))
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+async def search_contact_multi(db: AsyncSession, filters: dict[str, str]) -> list[ContactsModel]:
+    """
+    Пошук по кількох параметрах (динамічно).
+    Використовує AND між умовами.
+    """
+    conditions = []
+    for field, value in filters.items():
+        model_field = getattr(ContactsModel, field, None)
+        if model_field:
+            conditions.append(model_field.ilike(f"%{value}%"))
+
+    if not conditions:
+        return []
+
+    stmt = select(ContactsModel).filter(and_(*conditions))
+    result = await db.execute(stmt)
+    return result.scalars().all()

@@ -46,8 +46,8 @@ async def read_contact(contact_id: int, db: AsyncSession = Depends(get_async_ses
 
     
 
-# 4. PUT - Оновлення даних контакту (U - Update)
-@router.put("/{contact_id}", response_model=ContactUpdate)
+# 4. PATCH - Оновлення даних контакту (U - Update)
+@router.patch("/{contact_id}", response_model=ContactUpdate)
 async def update_existing_contact(
     contact_id: int, 
     contact_update: ContactUpdate, 

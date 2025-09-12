@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+import datetime
 from typing import List
 from src.database.db import get_async_session
 from src.schemas.schemas import ContactCreate, Contact, ContactUpdate
 from src.repository.repository import create_contact, get_contacts, get_contact_by_id, update_contact, delete_contact
-from src.repository.repository import search_contact_single, search_contact_multi
+from src.repository.repository import search_contact_single, search_contact_multi, get_contacts_upcoming_birthdays
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 
@@ -74,7 +75,8 @@ async def delete_existing_contact(contact_id: int, db: AsyncSession = Depends(ge
     return None
 
 
-# 6. GET - Отримання одного контакту за first_name або  last_name або email (R - Read)
+# 6. GET - Отримання одного контакту за first_name або  last_name або email, 
+# також є опція пошуку по 1,2,3 параметрам багато контактів
 @router.post("/search", response_model=list[Contact])
 async def search_contacts(
     query: dict,
@@ -98,3 +100,54 @@ async def search_contacts(
         raise HTTPException(status_code=404, detail="Контакт(и) не знайдено.")
 
     return contacts
+
+
+# 6. GET - Отримання списку контактів з днями народження на найближчі 7 днів.
+# @router.post("/search", response_model=list[Contact])
+# def get_day_of_year_int() -> int:
+#     """Get current day of year (1-365/366)"""
+#     now = datetime.datetime.now()
+#     return int(now.strftime("%j"))
+
+
+# def get_current_year() -> int:
+#     """Get current year"""
+#     return datetime.datetime.now().year
+
+
+# @router.get("/upcoming-birthdays", response_model=list[Contact])
+# async def upcoming_birthdays(db: AsyncSession = Depends(get_async_session)):
+#     """
+#     Returns all contacts with birthdays in the next 7 days.
+#     """
+#     return await get_contacts_next_7_days(db)
+    
+# @router.get("/upcoming-birthdays", response_model=List[Contact])
+# async def get_upcoming_birthdays_endpoint(
+#     days: int = 7,
+#     db: AsyncSession = Depends(get_async_session)
+# ):
+#     """
+#     Отримати контакти з майбутніми днями народження.
+    
+#     Args:
+#         days: Кількість днів для перегляду вперед (макс. 365)
+#     """
+#     if days < 1 or days > 365:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Days parameter must be between 1 and 365"
+#         )
+    
+#     try:
+#         contacts = await get_upcoming_birthdays(db, days)
+#         return contacts
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail=f"Error retrieving upcoming birthdays: {str(e)}"
+#         )
+
+@router.get("/upcoming_birthdays/", response_model=List[Contact])
+async def get_coming_birthday_contacts(db: AsyncSession = Depends(get_async_session)):
+    return await get_contacts_upcoming_birthdays(db)

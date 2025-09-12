@@ -1,8 +1,9 @@
+from datetime import date, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.models import ContactsModel
 from src.schemas.schemas import ContactBase, ContactCreate, ContactUpdate, Contact
 from typing import List, Optional
-from sqlalchemy import select
+from sqlalchemy import select, extract
 from sqlalchemy import or_, and_
 
 
@@ -134,5 +135,81 @@ async def search_contact_multi(db: AsyncSession, filters: dict[str, str]) -> lis
         return []
 
     stmt = select(ContactsModel).filter(or_(*conditions))
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+# async def get_upcoming_birthdays(
+#     db: AsyncSession, 
+#     days: int = 7
+# ) -> List[ContactsModel]:
+#     """
+#     Знаходить контакти з днями народження в найближчі N днів.
+#     Автоматично обробляє високосні роки та перехід через рік.
+    
+#     Args:
+#         db: Асинхронна сесія БД
+#         days: Кількість днів для перегляду вперед (за замовчуванням 7)
+        
+#     Returns:
+#         List[ContactsModel]: Список контактів з майбутніми днями народження
+#     """
+#     today = datetime.date.today()
+#     end_date = today + datetime.timedelta(days=days)
+    
+#     # Створюємо умови для кожного дня в діапазоні
+#     conditions = []
+#     current_date = today
+    
+#     while current_date <= end_date:
+#         # Для кожної дати створюємо умову (місяць AND день)
+#         condition = and_(
+#             extract('month', ContactsModel.birthday) == current_date.month,
+#             extract('day', ContactsModel.birthday) == current_date.day
+#         )
+#         conditions.append(condition)
+#         current_date += datetime.timedelta(days=1)
+    
+#     # Об'єднуємо всі умови через OR
+#     stmt = select(ContactsModel).where(or_(*conditions))
+    
+#     result = await db.execute(stmt)
+#     return result.scalars().all()
+
+async def get_contacts_upcoming_birthdays(db: AsyncSession) -> List[Contact]:
+    today = date.today()
+    future_date = today + timedelta(days=7)
+
+    if today.month == future_date.month:
+        # Easy option within one month
+        stmt = (
+            select(ContactsModel)
+            .where(
+                and_(
+                    extract("month", ContactsModel.birthday) == today.month,
+                    extract("day", ContactsModel.birthday).between(today.day, future_date.day),
+                )
+            )
+        )
+    else:
+        # Transition in a month
+        stmt = (
+            select(Contact)
+            .where(
+                or_(
+                    # Days between now and the end of the month
+                    and_(
+                        extract("month", Contact.birthday) == today.month,
+                        extract("day", Contact.birthday) >= today.day,
+                    ),
+                    # Days from next month to future_date
+                    and_(
+                        extract("month", Contact.birthday) == future_date.month,
+                        extract("day", Contact.birthday) <= future_date.day,
+                    ),
+                )
+            )
+        )
+
     result = await db.execute(stmt)
     return result.scalars().all()

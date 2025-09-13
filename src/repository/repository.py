@@ -3,20 +3,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.models import ContactsModel
 from src.schemas.schemas import ContactBase, ContactCreate, ContactUpdate, Contact
 from typing import List, Optional
-from sqlalchemy import select, extract
-from sqlalchemy import or_, and_
+from sqlalchemy import select, extract, or_, and_
 
 
-async def create_contact(db: AsyncSession, contact: ContactCreate) -> Contact:
+async def create_contact(db: AsyncSession, contact: ContactCreate) -> ContactsModel:
     """
-    Створює нового користувача в базі даних.
+    Creates a new contact in the database.
 
     Args:
-        db (AsyncSession): Сесія бази даних.
-        user (UserCreate): Схема Pydantic з даними користувача.
+        db (AsyncSession): The database session.
+        contact (ContactCreate): The Pydantic schema with contact data.
 
     Returns:
-        User: Об'єкт користувача з бази даних.
+        ContactsModel: The newly created contact object from the database.
     """
     db_contact = ContactsModel(
         first_name=contact.first_name,
@@ -30,19 +29,19 @@ async def create_contact(db: AsyncSession, contact: ContactCreate) -> Contact:
     await db.commit()
     await db.refresh(db_contact)
     return db_contact
-   
+    
 
-async def get_contacts(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[Contact]:
+async def get_contacts(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[ContactsModel]:
     """
-    Повертає список всіх контактів з бази даних.
+    Retrieves a list of all contacts from the database.
 
     Args:
-        db (AsyncSession): Сесія бази даних.
-        skip (int): Кількість записів, які потрібно пропустити (для пагінації).
-        limit (int): Максимальна кількість записів для повернення.
+        db (AsyncSession): The database session.
+        skip (int): The number of records to skip (for pagination).
+        limit (int): The maximum number of records to return.
 
     Returns:
-        List[Contact]: Список об'єктів контактів.
+        List[ContactsModel]: A list of contact objects.
     """
     stmt = select(ContactsModel).offset(skip).limit(limit)
     result = await db.execute(stmt)
@@ -50,32 +49,32 @@ async def get_contacts(db: AsyncSession, skip: int = 0, limit: int = 100) -> Lis
     return contacts
 
 
-async def get_contact_by_id(db: AsyncSession, contact_id: int) -> Contact | None:
+async def get_contact_by_id(db: AsyncSession, contact_id: int) -> Optional[ContactsModel]:
     """
-    Повертає один контакт за його ID.
+    Retrieves a single contact by its ID.
 
     Args:
-        db (AsyncSession): Сесія бази даних.
-        contact_id (int): ID контакту.
+        db (AsyncSession): The database session.
+        contact_id (int): The ID of the contact to retrieve.
 
     Returns:
-        Contact | None: Об'єкт контакту або None, якщо його не знайдено.
+        Optional[ContactsModel]: The contact object or None if not found.
     """
-    # Запит до бази даних для отримання контакту за ID.
+    # Query the database to get a contact by its ID.
     return await db.get(ContactsModel, contact_id)
 
 
-async def update_contact(db: AsyncSession, contact_id: int, body: ContactUpdate) -> Optional[Contact]:
+async def update_contact(db: AsyncSession, contact_id: int, body: ContactUpdate) -> Optional[ContactsModel]:
     """
-    Оновлює існуючий контакт у базі даних.
+    Updates an existing contact in the database.
 
     Args:
-        db (AsyncSession): Сесія бази даних.
-        contact_id (int): ID контакту.
-        body (ContactUpdate): Схема Pydantic з даними для оновлення.
+        db (AsyncSession): The database session.
+        contact_id (int): The ID of the contact to update.
+        body (ContactUpdate): Pydantic schema with the data for the update.
 
     Returns:
-        Optional[Contact]: Оновлений об'єкт контакту або None, якщо його не знайдено.
+        Optional[ContactsModel]: The updated contact object or None if not found.
     """
     contact = await db.get(ContactsModel, contact_id)
     if contact:
@@ -86,16 +85,16 @@ async def update_contact(db: AsyncSession, contact_id: int, body: ContactUpdate)
     return contact
 
 
-async def delete_contact(db: AsyncSession, contact_id: int) -> Contact | None:
+async def delete_contact(db: AsyncSession, contact_id: int) -> Optional[ContactsModel]:
     """
-    Видаляє контакт за його ID.
+    Deletes a contact by its ID.
 
     Args:
-        db (AsyncSession): Сесія бази даних.
-        contact_id (int): ID контакту.
+        db (AsyncSession): The database session.
+        contact_id (int): The ID of the contact to delete.
 
     Returns:
-        Contact | None: Видалений об'єкт контакту або None, якщо його не знайдено.
+        Optional[ContactsModel]: The deleted contact object or None if not found.
     """
     db_contact = await db.get(ContactsModel, contact_id)
 
@@ -109,8 +108,14 @@ async def delete_contact(db: AsyncSession, contact_id: int) -> Contact | None:
 
 async def search_contacts_repo(db: AsyncSession, filters: dict[str, str]) -> List[ContactsModel]:
     """
-    Універсальний пошук контактів по 1 або кількох параметрах.
-    Використовує OR між умовами (тобто знайде, якщо хоча б одне співпаде).
+    Performs a universal search for contacts based on one or more parameters.
+
+    Args:
+        db (AsyncSession): The database session.
+        filters (dict[str, str]): A dictionary of key-value pairs for filtering.
+
+    Returns:
+        List[ContactsModel]: A list of contacts that match the search criteria.
     """
     if not filters:
         return []
@@ -129,12 +134,23 @@ async def search_contacts_repo(db: AsyncSession, filters: dict[str, str]) -> Lis
     return result.scalars().all()
 
 
-async def get_contacts_upcoming_birthdays(db: AsyncSession) -> List[Contact]:
+async def get_contacts_upcoming_birthdays(db: AsyncSession, days: int=7) -> List[ContactsModel]:
+    """
+    Retrieves contacts with birthdays in the next 7 days, including today.
+
+    Handles month and year transitions correctly.
+
+    Args:
+        db (AsyncSession): The database session.
+
+    Returns:
+        List[ContactsModel]: A list of contacts with upcoming birthdays.
+    """
     today = date.today()
-    future_date = today + timedelta(days=7)
+    future_date = today + timedelta(days=days)
 
     if today.month == future_date.month:
-        # Easy option within one month
+        # Case 1: The entire 7-day period is within a single month.
         stmt = (
             select(ContactsModel)
             .where(
@@ -145,20 +161,22 @@ async def get_contacts_upcoming_birthdays(db: AsyncSession) -> List[Contact]:
             )
         )
     else:
-        # Transition in a month
+        # Case 2: The 7-day period transitions between two months (e.g., Dec to Jan).
+        # We need to build a query that checks for birthdays in the rest of the current month
+        # and for birthdays at the beginning of the next month.
         stmt = (
-            select(Contact)
+            select(ContactsModel)
             .where(
                 or_(
-                    # Days between now and the end of the month
+                    # Days from the current date to the end of the current month.
                     and_(
-                        extract("month", Contact.birthday) == today.month,
-                        extract("day", Contact.birthday) >= today.day,
+                        extract("month", ContactsModel.birthday) == today.month,
+                        extract("day", ContactsModel.birthday) >= today.day,
                     ),
-                    # Days from next month to future_date
+                    # Days from the start of the next month to the future_date.
                     and_(
-                        extract("month", Contact.birthday) == future_date.month,
-                        extract("day", Contact.birthday) <= future_date.day,
+                        extract("month", ContactsModel.birthday) == future_date.month,
+                        extract("day", ContactsModel.birthday) <= future_date.day,
                     ),
                 )
             )

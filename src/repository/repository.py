@@ -124,7 +124,7 @@ async def search_contacts_repo(db: AsyncSession, filters: dict[str, str]) -> Lis
     if not conditions:
         return []
 
-    stmt = select(ContactsModel).filter(or_(*conditions))
+    stmt = select(ContactsModel).filter(and_(*conditions))
     result = await db.execute(stmt)
     return result.scalars().all()
 

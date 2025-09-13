@@ -107,28 +107,18 @@ async def delete_contact(db: AsyncSession, contact_id: int) -> Contact | None:
     return None
 
 
-async def search_contact_single(db: AsyncSession, field: str, value: str) -> list[ContactsModel]:
+async def search_contacts_repo(db: AsyncSession, filters: dict[str, str]) -> List[ContactsModel]:
     """
-    Пошук по одному параметру (динамічно).
+    Універсальний пошук контактів по 1 або кількох параметрах.
+    Використовує OR між умовами (тобто знайде, якщо хоча б одне співпаде).
     """
-    model_field = getattr(ContactsModel, field, None)
-    if model_field is None:
+    if not filters:
         return []
 
-    stmt = select(ContactsModel).filter(model_field.ilike(f"%{value}%"))
-    result = await db.execute(stmt)
-    return result.scalars().all()
-
-
-async def search_contact_multi(db: AsyncSession, filters: dict[str, str]) -> list[ContactsModel]:
-    """
-    Пошук по кількох параметрах (динамічно).
-    Використовує AND між умовами.
-    """
     conditions = []
     for field, value in filters.items():
         model_field = getattr(ContactsModel, field, None)
-        if model_field:
+        if model_field is not None:
             conditions.append(model_field.ilike(f"%{value}%"))
 
     if not conditions:
@@ -138,43 +128,6 @@ async def search_contact_multi(db: AsyncSession, filters: dict[str, str]) -> lis
     result = await db.execute(stmt)
     return result.scalars().all()
 
-
-# async def get_upcoming_birthdays(
-#     db: AsyncSession, 
-#     days: int = 7
-# ) -> List[ContactsModel]:
-#     """
-#     Знаходить контакти з днями народження в найближчі N днів.
-#     Автоматично обробляє високосні роки та перехід через рік.
-    
-#     Args:
-#         db: Асинхронна сесія БД
-#         days: Кількість днів для перегляду вперед (за замовчуванням 7)
-        
-#     Returns:
-#         List[ContactsModel]: Список контактів з майбутніми днями народження
-#     """
-#     today = datetime.date.today()
-#     end_date = today + datetime.timedelta(days=days)
-    
-#     # Створюємо умови для кожного дня в діапазоні
-#     conditions = []
-#     current_date = today
-    
-#     while current_date <= end_date:
-#         # Для кожної дати створюємо умову (місяць AND день)
-#         condition = and_(
-#             extract('month', ContactsModel.birthday) == current_date.month,
-#             extract('day', ContactsModel.birthday) == current_date.day
-#         )
-#         conditions.append(condition)
-#         current_date += datetime.timedelta(days=1)
-    
-#     # Об'єднуємо всі умови через OR
-#     stmt = select(ContactsModel).where(or_(*conditions))
-    
-#     result = await db.execute(stmt)
-#     return result.scalars().all()
 
 async def get_contacts_upcoming_birthdays(db: AsyncSession) -> List[Contact]:
     today = date.today()
